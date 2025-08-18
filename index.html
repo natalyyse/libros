@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Biblioteca Virtual de Lectura</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="estilos.css" />
+</head>
+<body class="p-6">
+  <h1 class="text-2xl font-bold mb-4">Biblioteca Virtual</h1>
+
+  <div class="mb-6">
+    <label class="block mb-2 font-medium">Sube tus libros (EPUB, PDF)</label>
+    <input id="fileInput" type="file" accept=".epub,.pdf" multiple class="border p-2 rounded w-full" />
+  </div>
+
+  <div id="library" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+
+  <div id="readerModal" class="fixed inset-0 flex items-center justify-center modal p-4">
+    <div class="modal-content bg-white rounded-lg shadow-lg p-4 relative flex flex-col items-center justify-center">
+      <button id="closeBtn" class="absolute top-2 right-2 text-gray-600 hover:text-gray-900">✕</button>
+      <div id="epub-reader-container" class="w-full h-full flex items-center justify-center">
+        <div id="epub-reader" class="hidden mx-auto"></div>
+      </div>
+      <div id="pdf-reader-container" class="w-full h-full flex items-center justify-center">
+        <canvas id="pdf-canvas" class="hidden mx-auto"></canvas>
+      </div>
+      <div id="controls" class="flex justify-between mt-2 w-full max-w-[700px]">
+        <button id="prevBtn" class="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300">Anterior</button>
+        <span id="pageInfo"></span>
+        <button id="nextBtn" class="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300">Siguiente</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
