@@ -1,11 +1,11 @@
 from flask import Flask, request, jsonify, send_file, send_from_directory
 from supabase import create_client
 import io
+from decouple import config
 
-# --- Configuración de Supabase ---
-# Se conecta a la base de datos Supabase usando la URL y la clave de API.
-url = "https://whrvxjjqldtpgfahcgth.supabase.co"
-key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndocnZ4ampxbGR0cGdmYWhjZ3RoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0NTA4NjIsImV4cCI6MjA3MDAyNjg2Mn0.QrjRXRzaOxKMzvhfsv9dcQSNGv2hIeM6Mfeui0ob48Q"
+# --- Cargar variables de entorno ---
+url = config("SUPABASE_URL")
+key = config("SUPABASE_KEY")
 supabase = create_client(url, key)
 
 # --- Inicialización de la aplicación Flask ---
