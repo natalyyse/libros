@@ -8,17 +8,21 @@
   <link rel="stylesheet" href="static/estilos.css" />
 </head>
 <body class="p-6">
-  <h1 class="text-2xl font-bold mb-4">Biblioteca Virtual</h1>
-
-  <div class="mb-6">
-    <label class="block mb-2 font-medium">Sube tus libros (EPUB, PDF)</label>
-    <input id="fileInput" type="file" accept=".epub,.pdf" multiple class="border p-2 rounded w-full" />
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">Biblioteca Virtual</h1>
+    <div>
+      <label class="relative">
+        <input id="fileInput" type="file" accept=".epub,.pdf" multiple class="hidden" />
+        <span class="bg-indigo-500 text-white px-3 py-1 rounded cursor-pointer text-sm shadow hover:bg-indigo-600 transition">Agregar libro</span>
+      </label>
+      <button id="logoutBtn" class="ml-4 bg-red-500 text-white px-3 py-1 rounded text-sm shadow hover:bg-red-600 transition">Cerrar sesión</button>
+    </div>
   </div>
 
-  <div id="library" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+  <div id="library" class="grid grid-cols-2 md:grid-cols-4 gap-6"></div>
 
   <div id="readerModal" class="fixed inset-0 flex items-center justify-center modal p-4">
-    <div class="modal-content bg-white rounded-lg shadow-lg p-4 relative flex flex-col items-center justify-center">
+    <div class="modal-content rounded-lg  p-4 relative flex flex-col items-center justify-center">
       <button id="closeBtn" class="absolute top-2 right-2 text-gray-600 hover:text-gray-900">✕</button>
       <div id="epub-reader-container" class="w-full h-full flex items-center justify-center">
         <div id="epub-reader" class="hidden mx-auto"></div>
@@ -37,6 +41,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="static/app.js"></script>
 </body>
 </html>

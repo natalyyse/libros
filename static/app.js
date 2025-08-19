@@ -13,6 +13,11 @@ const pageInfo = document.getElementById('pageInfo');
 let epubRendition, pdfDoc = null, currentPage = 1;
 const simbolosInvalidos = /[\/\\:\*\?"<>\|\%\#]/g;
 
+// Función para obtener el token de autenticación
+function getAuthToken() {
+  return localStorage.getItem('authToken');
+}
+
 // Subida de archivos y limpieza de nombres
 fileInput.addEventListener('change', (e) => {
   Array.from(e.target.files).forEach((file) => {
@@ -28,12 +33,43 @@ fileInput.addEventListener('change', (e) => {
 
     fetch('/api/libros', {
       method: 'POST',
-      body: formData
+      body: formData,
+      headers: {
+        'Authorization': getAuthToken()
+      }
     })
-    .then(res => res.json())
+    .then(res => {
+      if (res.status === 401) {
+        alert('Sesión expirada. Por favor inicia sesión de nuevo.');
+        window.location.href = '/';
+        return;
+      }
+      return res.json();
+    })
     .then(data => {
-      alert('Libro agregado correctamente');
-      mostrarLibros();
+      if (data) {
+        alert('Libro agregado correctamente');
+        // Solo agregar la tarjeta del nuevo libro, sin recargar toda la lista
+        const libro = {
+          title: data.title || fileLimpio.name,
+          filename: fileLimpio.name,
+          public_url: data.public_url
+        };
+        const ext = libro.filename.split('.').pop().toLowerCase();
+        fetch(libro.public_url, {
+          headers: {
+            'Authorization': getAuthToken()
+          }
+        })
+          .then(res => res.blob())
+          .then(blob => {
+            if (ext === 'pdf') {
+              mostrarPortadaPDF(blob, libro);
+            } else if (ext === 'epub') {
+              mostrarPortadaEPUB(blob, libro);
+            }
+          });
+      }
     })
     .catch(err => {
       alert('Error al agregar libro');
@@ -132,25 +168,103 @@ function cleanup() {
 
 // Mostrar libros en la biblioteca
 function mostrarLibros() {
-  fetch('/api/libros')
-    .then(res => res.json())
+  fetch('/api/libros', {
+    headers: {
+      'Authorization': getAuthToken()
+    }
+  })
+    .then(res => {
+      if (res.status === 401) {
+        alert('Sesión expirada. Por favor inicia sesión de nuevo.');
+        window.location.href = '/';
+        return [];
+      }
+      return res.json();
+    })
     .then(libros => {
       library.innerHTML = '';
+      if (!Array.isArray(libros) || libros.length === 0) {
+        library.innerHTML = '<div class="col-span-4 text-center text-gray-500">No hay libros agregados aún.</div>';
+        return;
+      }
       libros.forEach(libro => {
         const ext = libro.filename.split('.').pop().toLowerCase();
-        const card = document.createElement('div');
-        card.className = 'bg-white p-4 rounded shadow cursor-pointer hover:shadow-md';
-        card.innerHTML = `<div class='font-semibold truncate'>${libro.title}</div>`;
-        card.addEventListener('click', () => {
-          if (ext === 'epub' || ext === 'pdf') {
-            fetch(libro.public_url)
-              .then(res => res.blob())
-              .then(blob => openReader(blob, ext));
+        fetch(libro.public_url, {
+          headers: {
+            'Authorization': getAuthToken()
           }
-        });
-        library.appendChild(card);
+        })
+          .then(res => res.blob())
+          .then(blob => {
+            if (ext === 'pdf') {
+              mostrarPortadaPDF(blob, libro);
+            } else if (ext === 'epub') {
+              mostrarPortadaEPUB(blob, libro);
+            }
+          });
       });
     });
+}
+
+// Extraer portada PDF (primera página)
+function mostrarPortadaPDF(blob, libro) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    pdfjsLib.getDocument({ data: reader.result }).promise.then(pdfDoc => {
+      pdfDoc.getPage(1).then(page => {
+        const viewport = page.getViewport({ scale: 1.5 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise.then(() => {
+          crearCard(canvas.toDataURL(), libro);
+        });
+      });
+    });
+  };
+  reader.readAsArrayBuffer(blob);
+}
+
+// Extraer portada EPUB (imagen de portada)
+function mostrarPortadaEPUB(blob, libro) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    const book = ePub(reader.result);
+    book.loaded.cover.then(coverUrl => {
+      if (coverUrl) {
+        book.archive.createUrl(coverUrl).then(url => {
+          crearCard(url, libro);
+        });
+      } else {
+        crearCard('static/default_cover.png', libro); // Imagen por defecto
+      }
+    });
+  };
+  reader.readAsArrayBuffer(blob);
+}
+
+// Crear tarjeta visual
+function crearCard(imgSrc, libro) {
+  // Limpia el nombre: quita extensión, guiones, números, puntos y reemplaza por espacios
+  let titulo = libro.title || libro.filename;
+  titulo = titulo.replace(/\.[^/.]+$/, ''); // Quita la extensión
+  titulo = titulo.replace(/[_\-\.]+/g, ' ');  // Quita guiones, guiones bajos y puntos
+  titulo = titulo.replace(/\d+/g, '');        // Quita números
+  titulo = titulo.replace(/\s{2,}/g, ' ').trim(); // Limpia espacios extra
+
+  const card = document.createElement('div');
+  card.className = 'card flex flex-col items-center p-2 cursor-pointer';
+  card.innerHTML = `
+    <img src="${imgSrc}" alt="Portada" class="rounded-lg mb-2 object-cover" style="width:120px;height:170px;">
+    <div class='font-semibold text-center w-full'>${titulo}</div>
+  `;
+  card.addEventListener('click', () => {
+    const ext = libro.filename.split('.').pop().toLowerCase();
+    fetch(libro.public_url)
+      .then(res => res.blob())
+      .then(blob => openReader(blob, ext));
+  });
+  library.appendChild(card);
 }
 
 // Inicialización al cargar la página
@@ -163,3 +277,16 @@ window.addEventListener('resize', () => {
     epubRendition.resize(contentBox.width, contentBox.height);
   }
 });
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  localStorage.removeItem('authToken');
+  window.location.href = '/';
+});
+
+if (!localStorage.getItem('authToken')) {
+  window.location.href = '/';
+}
+
+if (window['pdfjsLib']) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.worker.min.js';
+}
