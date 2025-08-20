@@ -1,4 +1,5 @@
 const fileInput = document.getElementById('fileInput');
+const loader = document.getElementById('loader');
 const library = document.getElementById('library');
 const modal = document.getElementById('readerModal');
 const closeBtn = document.getElementById('closeBtn');
@@ -20,59 +21,49 @@ function getAuthToken() {
 
 // Subida de archivos y limpieza de nombres
 fileInput.addEventListener('change', (e) => {
-  Array.from(e.target.files).forEach((file) => {
-    let nombreLimpio = file.name.replace(simbolosInvalidos, '').trim();
-    if (!nombreLimpio) {
-      alert(`El archivo "${file.name}" no tiene un nombre válido después de limpiar los símbolos y no será subido.`);
-      return;
-    }
-    const fileLimpio = new File([file], nombreLimpio, { type: file.type });
-    const formData = new FormData();
-    formData.append('file', fileLimpio);
-    formData.append('title', nombreLimpio);
+  loader.classList.remove('hidden'); // Mostrar loader al iniciar subida
+  let promesas = Array.from(e.target.files).map((file) => {
+    return new Promise((resolve) => {
+      let nombreLimpio = file.name.replace(simbolosInvalidos, '').trim();
+      if (!nombreLimpio) {
+        alert(`El archivo "${file.name}" no tiene un nombre válido después de limpiar los símbolos y no será subido.`);
+        return resolve();
+      }
+      const fileLimpio = new File([file], nombreLimpio, { type: file.type });
+      const formData = new FormData();
+      formData.append('file', fileLimpio);
+      formData.append('title', nombreLimpio);
 
-    fetch('/api/libros', {
-      method: 'POST',
-      body: formData,
-      headers: {
-        'Authorization': getAuthToken()
-      }
-    })
-    .then(res => {
-      if (res.status === 401) {
-        alert('Sesión expirada. Por favor inicia sesión de nuevo.');
-        window.location.href = '/';
-        return;
-      }
-      return res.json();
-    })
-    .then(data => {
-      if (data) {
-        alert('Libro agregado correctamente');
-        // Solo agregar la tarjeta del nuevo libro, sin recargar toda la lista
-        const libro = {
-          title: data.title || fileLimpio.name,
-          filename: fileLimpio.name,
-          public_url: data.public_url
-        };
-        const ext = libro.filename.split('.').pop().toLowerCase();
-        fetch(libro.public_url, {
-          headers: {
-            'Authorization': getAuthToken()
-          }
-        })
-          .then(res => res.blob())
-          .then(blob => {
-            if (ext === 'pdf') {
-              mostrarPortadaPDF(blob, libro);
-            } else if (ext === 'epub') {
-              mostrarPortadaEPUB(blob, libro);
-            }
-          });
-      }
-    })
-    .catch(err => {
-      alert('Error al agregar libro');
+      fetch('/api/libros', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': getAuthToken()
+        }
+      })
+      .then(res => {
+        if (res.status === 401) {
+          loader.classList.add('hidden');
+          alert('Sesión expirada. Por favor inicia sesión de nuevo.');
+          window.location.href = '/';
+          return resolve();
+        }
+        return res.json();
+      })
+      .then(data => {
+        loader.classList.add('hidden'); // Oculta loader tras la subida
+        if (data) {
+          alert('Libro agregado correctamente');
+          loader.classList.remove('hidden'); // Mostrar loader para listar libros después de aceptar
+          mostrarLibros();
+        }
+        resolve();
+      })
+      .catch(err => {
+        loader.classList.add('hidden');
+        alert('Error al agregar libro');
+        resolve();
+      });
     });
   });
   fileInput.value = '';
@@ -168,6 +159,7 @@ function cleanup() {
 
 // Mostrar libros en la biblioteca
 function mostrarLibros() {
+  loader.classList.remove('hidden'); // Mostrar loader al cargar libros
   fetch('/api/libros', {
     headers: {
       'Authorization': getAuthToken()
@@ -175,6 +167,7 @@ function mostrarLibros() {
   })
     .then(res => {
       if (res.status === 401) {
+        loader.classList.add('hidden');
         alert('Sesión expirada. Por favor inicia sesión de nuevo.');
         window.location.href = '/';
         return [];
@@ -184,12 +177,15 @@ function mostrarLibros() {
     .then(libros => {
       library.innerHTML = '';
       if (!Array.isArray(libros) || libros.length === 0) {
-        library.innerHTML = '<div class="col-span-4 text-center text-gray-500">No hay libros agregados aún.</div>';
+        library.innerHTML = '<div id="noLibrosMsg" class="col-span-4 text-center text-gray-500">No hay libros agregados aún.</div>';
+        loader.classList.add('hidden');
         return;
       }
-      libros.forEach(libro => {
+      const noLibrosMsg = document.getElementById('noLibrosMsg');
+      if (noLibrosMsg) noLibrosMsg.remove();
+      let portadasPromises = libros.map(libro => {
         const ext = libro.filename.split('.').pop().toLowerCase();
-        fetch(libro.public_url, {
+        return fetch(libro.public_url, {
           headers: {
             'Authorization': getAuthToken()
           }
@@ -202,6 +198,9 @@ function mostrarLibros() {
               mostrarPortadaEPUB(blob, libro);
             }
           });
+      });
+      Promise.all(portadasPromises).then(() => {
+        loader.classList.add('hidden'); // Oculta loader cuando termina de mostrar libros
       });
     });
 }
@@ -281,7 +280,10 @@ function crearCard(imgSrc, libro) {
 }
 
 // Inicialización al cargar la página
-window.addEventListener('DOMContentLoaded', mostrarLibros);
+window.addEventListener('DOMContentLoaded', () => {
+  loader.classList.remove('hidden'); // Mostrar loader al cargar la página
+  mostrarLibros();
+});
 
 // Redimensiona el lector EPUB al cambiar el tamaño de la ventana
 window.addEventListener('resize', () => {
