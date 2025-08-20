@@ -35,23 +35,27 @@
   <div class="hand"></div>
   <div class="hand rgt"></div>
   <h1 id="form-title">Login</h1>
-  <div class="form-group">
-    <input id="username" required="required" class="form-control"/>
-    <label class="form-label">Username</label>
+  <div class="form-group" style="position:relative;">
+    <input id="username" required="required" class="form-control" placeholder=" " />
+    <label class="form-label" for="username">Username</label>
   </div>
-  <div class="form-group">
-    <input id="password" type="password" required="required" class="form-control"/>
-    <label class="form-label">Password</label>
-    <p class="alert">Invalid Credentials..!!</p>
-    <button class="btn" id="main-btn-login" type="button">Login</button>
-    <button class="btn" id="main-btn-register" type="button" style="display:none;">Registrarse</button>
-    <div style="margin-top: 15px; ">
-      <span>¿No tienes cuenta? <a href="#" id="show-register">Regístrate</a></span>
-    </div>
-    <div style="margin-top: 15px; display:none;" id="login-link">
-      <span>¿Ya tienes cuenta? <a href="#" id="show-login">Inicia sesión</a></span>
-    </div>
+  <div class="form-group" style="position:relative;">
+    <input id="password" type="password" required="required" class="form-control" placeholder=" " style="padding-right:40px;">
+    <label class="form-label" for="password">Password</label>
+    <img id="togglePassword"
+         src="https://cdn.jsdelivr.net/npm/@mdi/svg/svg/eye-outline.svg"
+         style="position:absolute; right:10px; top:50%; transform:translateY(-50%); width:24px; cursor:pointer;"
+         alt="Mostrar contraseña" />
   </div>
+  <p class="alert">Invalid Credentials..!!</p>
+  <button class="btn" id="main-btn-login" type="button">Login</button>
+  <button class="btn" id="main-btn-register" type="button" style="display:none;">Registrarse</button>
+  <div style="margin-top: 15px;" class="text-small">
+  <span>¿No tienes cuenta? <a href="#" id="show-register">Regístrate</a></span>
+</div>
+<div style="margin-top: 15px; display:none;" id="login-link" class="text-small">
+  <span>¿Ya tienes cuenta? <a href="#" id="show-login">Inicia sesión</a></span>
+</div>
 </form>
 
 <div id="libros-section" style="display:none; margin-top:30px;">

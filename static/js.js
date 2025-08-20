@@ -107,6 +107,21 @@ $(function() {
       }
     });
   });
+
+  // Mostrar/ocultar contraseña
+  const togglePwd = document.getElementById('togglePassword');
+  const pwdInput = document.getElementById('password');
+  if (togglePwd && pwdInput) {
+    togglePwd.addEventListener('click', function () {
+      if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+        this.src = 'https://cdn.jsdelivr.net/npm/@mdi/svg/svg/eye-off-outline.svg';
+      } else {
+        pwdInput.type = 'password';
+        this.src = 'https://cdn.jsdelivr.net/npm/@mdi/svg/svg/eye-outline.svg';
+      }
+    });
+  }
 });
 
 let authToken = null;

@@ -260,9 +260,22 @@ function crearCard(imgSrc, libro) {
   `;
   card.addEventListener('click', () => {
     const ext = libro.filename.split('.').pop().toLowerCase();
-    fetch(libro.public_url)
-      .then(res => res.blob())
-      .then(blob => openReader(blob, ext));
+    fetch(libro.public_url, {
+      headers: {
+        'Authorization': getAuthToken()
+      }
+    })
+      .then(res => {
+        if (res.status === 401) {
+          alert('Sesión expirada. Por favor inicia sesión de nuevo.');
+          window.location.href = '/';
+          return;
+        }
+        return res.blob();
+      })
+      .then(blob => {
+        if (blob) openReader(blob, ext);
+      });
   });
   library.appendChild(card);
 }

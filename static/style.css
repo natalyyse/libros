@@ -246,6 +246,7 @@ form.up {
 h1 {
   color: #FF4081;
   font-family: 'Dancing Script', cursive;
+  margin-top: -2px;
 }
 
 .btn {
@@ -277,17 +278,18 @@ h1 {
   margin-top: 30px;
 }
 .form-label {
+  color: #888;
+  font-size: 0.9rem;
   position: absolute;
-  z-index: 1;
-  left: 0;
-  top: 5px;
-  transition: 0.3s;
+  left: 0px;
+  top: -2px; /* antes: 8px */
+  transition: all 0.2s;
 }
 .form-control {
   width: 100%;
   position: relative;
   z-index: 3;
-  height: 35px;
+  height: 40px;
   background: none;
   border: none;
   padding: 5px 0;
@@ -303,12 +305,13 @@ h1 {
   outline: none;
   box-shadow: 0 1px #FF4081;
   border-color: #FF4081;
+  z-index: auto;
 }
 .form-control:focus + .form-label,
-.form-control:valid + .form-label {
-  font-size: 12px;
-  color: #FF4081;
-  transform: translateY(-15px);
+.form-control:not(:placeholder-shown) + .form-label {
+  color: #e91e63;
+  font-size: 0.85rem;
+  top: -9px;
 }
 
 .alert {
@@ -359,4 +362,9 @@ h1 {
   0%, 100% { left: 0px; }
   20%, 60% { left: 20px; }
   40%, 80% { left: -20px; }
+}
+
+.text-small {
+  font-size: 0.85rem;
+  color: #444;
 }
