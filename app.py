@@ -82,6 +82,10 @@ def obtener_libros():
         libro['public_url'] = f'/api/libros/{libro["filename"]}'
     return jsonify(libros)
 
+# --- Inicialización de Supabase Storage ---
+storage = supabase.storage()
+bucket = "libros"
+
 # --- Agregar libro para el usuario ---
 @app.route('/api/libros', methods=['POST'])
 @login_required
@@ -91,15 +95,14 @@ def agregar_libro():
     file = request.files['file']
     filename = file.filename
     title = request.form.get('title', filename)
-    file_bytes = file.read()
-    mime_type = file.mimetype
-    public_url = f'/api/libros/{filename}'
+    # Subir a Supabase Storage
+    storage.from_(bucket).upload(filename, file)
+    public_url = storage.from_(bucket).get_public_url(filename)
     data = {
         "title": title,
         "filename": filename,
-        "mime_type": mime_type,
+        "mime_type": file.mimetype,
         "public_url": public_url,
-        "file_data": file_bytes.hex(),
         "user_id": request.user_id
     }
     supabase.table("books").insert(data).execute()
