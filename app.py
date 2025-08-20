@@ -7,6 +7,7 @@ import datetime
 import bcrypt
 from functools import wraps
 import os
+import re
 
 # --- Configuración global ---
 SECRET_KEY = "supersecretkey"  # Cambia esto por algo seguro
@@ -83,7 +84,7 @@ def obtener_libros():
     return jsonify(libros)
 
 # --- Carpeta de almacenamiento local ---
-STORAGE_FOLDER = 'libros_storage'
+STORAGE_FOLDER = os.path.join(os.path.expanduser("~"), "libros_storage")
 os.makedirs(STORAGE_FOLDER, exist_ok=True)
 
 # --- Agregar libro para el usuario ---
@@ -94,6 +95,8 @@ def agregar_libro():
         return jsonify({'error': 'No se envió archivo'}), 400
     file = request.files['file']
     filename = file.filename
+    # Limpia el nombre del archivo
+    filename = re.sub(r'[^\w\-.]', '_', filename)
     title = request.form.get('title', filename)
     mime_type = file.mimetype
 
@@ -117,7 +120,7 @@ def agregar_libro():
 @app.route('/storage/<filename>', methods=['GET'])
 @login_required
 def mostrar_libro(filename):
-    file_path = os.path.join(STORAGE_FOLDER, filename)
+    file_path = os.path.join(STORAGE_FOLDER, filename)  # STORAGE_FOLDER = 'libros_storage'
     if not os.path.exists(file_path):
         return jsonify({'error': 'Libro no encontrado'}), 404
     return send_file(file_path, download_name=filename, as_attachment=False)
