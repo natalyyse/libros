@@ -98,6 +98,7 @@ function openReader(file, ext) {
     epubRendition.display();
 
     epubRendition.on('rendered', async (section) => {
+      loader.classList.add('hidden');
       const location = epubRendition.location;
       if (location && location.start && location.start.displayed) {
         const current = location.start.displayed.page;
@@ -111,10 +112,11 @@ function openReader(file, ext) {
     epubReaderContainer.style.display = 'none';
     pdfReaderContainer.style.display = 'flex';
     epubContainer.classList.add('hidden');
-    pdfCanvas.classList.remove('hidden');
+    pdfCanvas.classList.remove('hidden'); // <-- Muestra el canvas para PDF
     const reader = new FileReader();
     reader.onload = () => {
       pdfjsLib.getDocument({ data: reader.result }).promise.then(doc => {
+        loader.classList.add('hidden');
         pdfDoc = doc; currentPage = 1; renderPage(currentPage);
       });
     };
@@ -193,20 +195,24 @@ function mostrarLibros() {
           .then(res => res.blob())
           .then(blob => {
             if (ext === 'pdf') {
-              mostrarPortadaPDF(blob, libro);
+              return new Promise(resolve => {
+                mostrarPortadaPDF(blob, libro, resolve);
+              });
             } else if (ext === 'epub') {
-              mostrarPortadaEPUB(blob, libro);
+              return new Promise(resolve => {
+                mostrarPortadaEPUB(blob, libro, resolve);
+              });
             }
           });
       });
       Promise.all(portadasPromises).then(() => {
-        loader.classList.add('hidden'); // Oculta loader cuando termina de mostrar libros
+        loader.classList.add('hidden'); // Oculta loader cuando termina de mostrar todos los libros
       });
     });
 }
 
 // Extraer portada PDF (primera página)
-function mostrarPortadaPDF(blob, libro) {
+function mostrarPortadaPDF(blob, libro, resolve) {
   const reader = new FileReader();
   reader.onload = () => {
     pdfjsLib.getDocument({ data: reader.result }).promise.then(pdfDoc => {
@@ -217,6 +223,7 @@ function mostrarPortadaPDF(blob, libro) {
         canvas.height = viewport.height;
         page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise.then(() => {
           crearCard(canvas.toDataURL(), libro);
+          resolve();
         });
       });
     });
@@ -225,7 +232,7 @@ function mostrarPortadaPDF(blob, libro) {
 }
 
 // Extraer portada EPUB (imagen de portada)
-function mostrarPortadaEPUB(blob, libro) {
+function mostrarPortadaEPUB(blob, libro, resolve) {
   const reader = new FileReader();
   reader.onload = () => {
     const book = ePub(reader.result);
@@ -233,9 +240,11 @@ function mostrarPortadaEPUB(blob, libro) {
       if (coverUrl) {
         book.archive.createUrl(coverUrl).then(url => {
           crearCard(url, libro);
+          resolve();
         });
       } else {
         crearCard('static/default_cover.png', libro); // Imagen por defecto
+        resolve();
       }
     });
   };
@@ -258,6 +267,7 @@ function crearCard(imgSrc, libro) {
     <div class='font-semibold text-center w-full'>${titulo}</div>
   `;
   card.addEventListener('click', () => {
+    loader.classList.remove('hidden'); // Mostrar loader al abrir libro
     const ext = libro.filename.split('.').pop().toLowerCase();
     fetch(libro.public_url, {
       headers: {
@@ -266,6 +276,7 @@ function crearCard(imgSrc, libro) {
     })
       .then(res => {
         if (res.status === 401) {
+          loader.classList.add('hidden');
           alert('Sesión expirada. Por favor inicia sesión de nuevo.');
           window.location.href = '/';
           return;
