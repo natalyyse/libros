@@ -93,7 +93,7 @@ function openReader(file, ext) {
       height: '100%',
       flow: 'paginated',
       manager: 'default'
-    });
+    }); 
     epubRendition.themes.default({
       body: { margin: '1rem auto', 'font-size': '100%', 'max-width': '700px' }
     });
