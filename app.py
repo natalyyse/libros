@@ -79,7 +79,7 @@ def obtener_libros():
     res = supabase.table("books").select("title,filename").eq("user_id", request.user_id).execute()
     libros = res.data
     for libro in libros:
-        libro['public_url'] = f'/api/libros/{libro["filename"]}'
+        libro['public_url'] = f'/storage/{libro["filename"]}'
     return jsonify(libros)
 
 # --- Carpeta de almacenamiento local ---
