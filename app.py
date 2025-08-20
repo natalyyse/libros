@@ -17,6 +17,7 @@ supabase = create_client(url, key)
 
 # --- Inicialización de la aplicación Flask ---
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100 MB
 
 # --- Decorador para requerir login mediante JWT ---
 def login_required(f):
