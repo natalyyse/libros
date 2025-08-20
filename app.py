@@ -6,6 +6,7 @@ import jwt
 import datetime
 import bcrypt
 from functools import wraps
+import os
 
 # --- Configuración global ---
 SECRET_KEY = "supersecretkey"  # Cambia esto por algo seguro
@@ -17,7 +18,6 @@ supabase = create_client(url, key)
 
 # --- Inicialización de la aplicación Flask ---
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100 MB
 
 # --- Decorador para requerir login mediante JWT ---
 def login_required(f):
@@ -82,6 +82,10 @@ def obtener_libros():
         libro['public_url'] = f'/api/libros/{libro["filename"]}'
     return jsonify(libros)
 
+# --- Carpeta de almacenamiento local ---
+STORAGE_FOLDER = 'libros_storage'
+os.makedirs(STORAGE_FOLDER, exist_ok=True)
+
 # --- Agregar libro para el usuario ---
 @app.route('/api/libros', methods=['POST'])
 @login_required
@@ -91,34 +95,32 @@ def agregar_libro():
     file = request.files['file']
     filename = file.filename
     title = request.form.get('title', filename)
-    file_bytes = file.read()
     mime_type = file.mimetype
-    public_url = f'/api/libros/{filename}'
+
+    # Guarda el archivo en la carpeta local
+    file_path = os.path.join(STORAGE_FOLDER, filename)
+    file.save(file_path)
+
+    # Guarda solo la ruta en la base de datos
+    public_url = f'/storage/{filename}'
     data = {
         "title": title,
         "filename": filename,
         "mime_type": mime_type,
         "public_url": public_url,
-        "file_data": file_bytes.hex(),
         "user_id": request.user_id
     }
     supabase.table("books").insert(data).execute()
     return jsonify({'message': 'Libro agregado correctamente', 'public_url': public_url}), 201
 
-# --- Descargar o mostrar libro específico ---
-@app.route('/api/libros/<filename>', methods=['GET'])
+# --- Descargar o mostrar libro específico desde la carpeta local ---
+@app.route('/storage/<filename>', methods=['GET'])
 @login_required
 def mostrar_libro(filename):
-    res = supabase.table("books").select("file_data,filename").eq("filename", filename).execute()
-    if not res.data:
+    file_path = os.path.join(STORAGE_FOLDER, filename)
+    if not os.path.exists(file_path):
         return jsonify({'error': 'Libro no encontrado'}), 404
-    libro = res.data[0]
-    file_bytes = bytes.fromhex(libro['file_data'])
-    return send_file(
-        io.BytesIO(file_bytes),
-        download_name=libro['filename'],
-        as_attachment=False
-    )
+    return send_file(file_path, download_name=filename, as_attachment=False)
 
 # --- Servir archivos estáticos y páginas principales ---
 @app.route('/')
