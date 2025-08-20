@@ -51,22 +51,24 @@ fileInput.addEventListener('change', (e) => {
         return res.json();
       })
       .then(data => {
-        loader.classList.add('hidden'); // Oculta loader tras la subida
-        if (data) {
-          alert('Libro agregado correctamente');
-          loader.classList.remove('hidden'); // Mostrar loader para listar libros después de aceptar
-          mostrarLibros();
-        }
-        resolve();
+        resolve(data); // Solo resuelve, no oculta loader ni muestra alerta aquí
       })
       .catch(err => {
-        loader.classList.add('hidden');
-        alert('Error al agregar libro');
-        resolve();
+        resolve(null); // Solo resuelve, no oculta loader ni muestra alerta aquí
       });
     });
   });
-  fileInput.value = '';
+
+  Promise.all(promesas).then((resultados) => {
+    // Solo muestra la alerta si al menos un libro se subió correctamente
+    if (resultados.some(r => r)) {
+      alert('Libros agregados correctamente');
+    } else {
+      alert('No se pudo agregar ningún libro');
+    }
+    mostrarLibros(); // Esto ya maneja el loader y lo oculta cuando termina de mostrar todos los libros
+    fileInput.value = '';
+  });
 });
 
 // Eventos de navegación y cierre del modal
