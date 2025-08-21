@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify, send_file, send_from_directory
 from supabase import create_client
-import io
 from decouple import config
 import jwt
 import datetime
@@ -124,6 +123,29 @@ def mostrar_libro(filename):
     if not os.path.exists(file_path):
         return jsonify({'error': 'Libro no encontrado'}), 404
     return send_file(file_path, download_name=filename, as_attachment=False)
+
+# --- Borrar libros ---
+@app.route('/api/libros/borrar', methods=['POST'])
+@login_required
+def borrar_libros():
+    data = request.json
+    filenames = data.get('filenames', [])
+    if not filenames or not isinstance(filenames, list):
+        return jsonify({'error': 'No se enviaron libros a borrar'}), 400
+
+    # Elimina de la base de datos y del disco
+    for filename in filenames:
+        # Elimina de la BD solo si pertenece al usuario
+        supabase.table("books").delete().eq("filename", filename).eq("user_id", request.user_id).execute()
+        # Elimina el archivo físico
+        file_path = os.path.join(STORAGE_FOLDER, filename)
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception:
+                pass  # Ignora errores de borrado
+
+    return jsonify({'message': 'Libros borrados correctamente'}), 200
 
 # --- Servir archivos estáticos y páginas principales ---
 @app.route('/')

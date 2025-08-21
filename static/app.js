@@ -292,6 +292,87 @@ function crearCard(imgSrc, libro) {
   library.appendChild(card);
 }
 
+// Crear modal para borrar libros
+function crearModalBorrar(libros) {
+  // Si ya existe, elimínalo
+  let modal = document.getElementById('deleteModal');
+  if (modal) modal.remove();
+
+  modal = document.createElement('div');
+  modal.id = 'deleteModal';
+  modal.className = 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50';
+  modal.innerHTML = `
+    <div class="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
+      <h2 class="text-lg font-bold mb-4">Selecciona los libros a borrar</h2>
+      <form id="deleteForm">
+        <div class="max-h-60 overflow-y-auto mb-4">
+          ${libros.map(libro => `
+            <label class="flex items-center mb-2">
+              <input type="checkbox" name="libros" value="${libro.filename}" class="mr-2">
+              <span>${libro.title || libro.filename}</span>
+            </label>
+          `).join('')}
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" id="cancelDelete" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Cancelar</button>
+          <button type="submit" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">Borrar seleccionados</button>
+        </div>
+      </form>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  document.getElementById('cancelDelete').onclick = () => modal.remove();
+
+  document.getElementById('deleteForm').onsubmit = function(e) {
+    e.preventDefault();
+    const seleccionados = Array.from(this.libros)
+      .filter(cb => cb.checked)
+      .map(cb => cb.value);
+    if (seleccionados.length === 0) {
+      alert('Selecciona al menos un libro.');
+      return;
+    }
+    loader.classList.remove('hidden');
+    fetch('/api/libros/borrar', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': getAuthToken()
+      },
+      body: JSON.stringify({ filenames: seleccionados })
+    })
+    .then(res => {
+      loader.classList.add('hidden');
+      modal.remove();
+      if (res.status === 401) {
+        alert('Sesión expirada. Por favor inicia sesión de nuevo.');
+        window.location.href = '/';
+        return;
+      }
+      if (!res.ok) {
+        alert('Error al borrar libros');
+        return;
+      }
+      alert('Libros borrados correctamente');
+      mostrarLibros();
+    });
+  };
+}
+
+// Acción del tachito
+document.getElementById('trashBtn').addEventListener('click', () => {
+  loader.classList.remove('hidden');
+  fetch('/api/libros', {
+    headers: { 'Authorization': getAuthToken() }
+  })
+  .then(res => res.json())
+  .then(libros => {
+    loader.classList.add('hidden');
+    crearModalBorrar(libros);
+  });
+});
+
 // Inicialización al cargar la página
 window.addEventListener('DOMContentLoaded', () => {
   loader.classList.remove('hidden'); // Mostrar loader al cargar la página
@@ -306,8 +387,27 @@ window.addEventListener('resize', () => {
   }
 });
 
+// Mostrar nombre de usuario en el menú
+document.getElementById('userName').textContent = localStorage.getItem('username') || 'Usuario';
+
+// Mostrar/ocultar menú al hacer clic en el botón
+const userMenuBtn = document.getElementById('userMenuBtn');
+const userDropdown = document.getElementById('userDropdown');
+userMenuBtn.addEventListener('click', () => {
+  userDropdown.classList.toggle('hidden');
+});
+
+// Cerrar menú si se hace clic fuera
+window.addEventListener('click', (e) => {
+  if (!userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
+    userDropdown.classList.add('hidden');
+  }
+});
+
+// Cerrar sesión
 document.getElementById('logoutBtn').addEventListener('click', () => {
   localStorage.removeItem('authToken');
+  localStorage.removeItem('username');
   window.location.href = '/';
 });
 
@@ -318,3 +418,4 @@ if (!localStorage.getItem('authToken')) {
 if (window['pdfjsLib']) {
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.worker.min.js';
 }
+

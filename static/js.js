@@ -100,6 +100,7 @@ $(function() {
         authToken = res.token;
         $('.alert').hide();
         localStorage.setItem('authToken', authToken);
+        localStorage.setItem('username', username); // <-- AGREGA ESTA LÍNEA
         window.location.href = '/index.html';
       },
       error: function() {
@@ -107,6 +108,9 @@ $(function() {
       }
     });
   });
+
+
+
 
   // Mostrar/ocultar contraseña
   const togglePwd = document.getElementById('togglePassword');
