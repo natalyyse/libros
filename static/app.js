@@ -387,23 +387,6 @@ window.addEventListener('resize', () => {
   }
 });
 
-// Mostrar nombre de usuario en el menú
-document.getElementById('userName').textContent = localStorage.getItem('username') || 'Usuario';
-
-// Mostrar/ocultar menú al hacer clic en el botón
-const userMenuBtn = document.getElementById('userMenuBtn');
-const userDropdown = document.getElementById('userDropdown');
-userMenuBtn.addEventListener('click', () => {
-  userDropdown.classList.toggle('hidden');
-});
-
-// Cerrar menú si se hace clic fuera
-window.addEventListener('click', (e) => {
-  if (!userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
-    userDropdown.classList.add('hidden');
-  }
-});
-
 // Cerrar sesión
 document.getElementById('logoutBtn').addEventListener('click', () => {
   localStorage.removeItem('authToken');
